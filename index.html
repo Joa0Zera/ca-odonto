@@ -477,6 +477,19 @@
     max-width:90vw;
     text-align:center;
   }
+  .admin-link{
+    position:fixed;
+    bottom:10px;
+    right:10px;
+    font-size:14px;
+    line-height:1;
+    text-decoration:none;
+    color:var(--text-soft);
+    opacity:0.35;
+    transition:opacity .2s ease;
+    z-index:5;
+  }
+  .admin-link:hover{opacity:0.85;}
   @media (max-width:860px){
     .card{grid-template-columns:1fr;}
     .divider-v{display:none;height:1px;width:100%;}
@@ -672,6 +685,8 @@
 </div>
 
 <div class="toast" id="toast"></div>
+
+<a class="admin-link" href="/admin.html" title="Acesso administrativo" aria-label="Acesso administrativo">⚙️</a>
 
 <script>
 const CONFIG = {
