@@ -1,0 +1,1165 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agendamento Online — CA Odonto</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0"></script>
+<style>
+  :root{
+    --gold-1:#E3C589;
+    --gold-2:#9C7A2E;
+    --gold-gradient:linear-gradient(135deg,var(--gold-1),var(--gold-2));
+    --text:#2E2C29;
+    --text-soft:#6B6660;
+    --bg:#FFFFFF;
+    --bg-soft:#FBF8F2;
+    --border:#EBE3D2;
+    --whatsapp:#25D366;
+    --danger:#C1503F;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:'Poppins',sans-serif;
+    background:var(--bg-soft);
+    color:var(--text);
+    min-height:100vh;
+    display:flex;
+    align-items:flex-start;
+    justify-content:center;
+    padding:32px 16px;
+  }
+  .page{
+    width:100%;
+    max-width:1080px;
+  }
+  .card{
+    background:var(--bg);
+    border-radius:28px;
+    box-shadow:0 20px 60px rgba(120,95,30,0.10), 0 2px 8px rgba(0,0,0,0.03);
+    display:grid;
+    grid-template-columns:300px 1px 1fr;
+    overflow:hidden;
+  }
+  .divider-v{background:var(--border);}
+  .col-left{
+    padding:32px 26px;
+    display:flex;
+    flex-direction:column;
+  }
+  .illustration{
+    background:var(--bg-soft);
+    border-radius:18px;
+    padding:18px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    margin-bottom:22px;
+  }
+  .illustration svg{width:100%;height:auto;max-height:140px;}
+  .logo-img{
+    width:100%;
+    max-width:220px;
+    height:auto;
+    display:block;
+    margin:0 auto 22px;
+  }
+  .contact-line{
+    display:flex;
+    gap:10px;
+    align-items:flex-start;
+    font-size:13px;
+    color:var(--text-soft);
+    line-height:1.5;
+    margin-bottom:12px;
+  }
+  .contact-line svg{flex:0 0 auto;margin-top:2px;}
+  .whatsapp-btn{
+    margin-top:6px;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap:8px;
+    background:var(--whatsapp);
+    color:#fff;
+    text-decoration:none;
+    font-size:13px;
+    font-weight:600;
+    padding:10px 16px;
+    border-radius:999px;
+    box-shadow:0 4px 12px rgba(37,211,102,0.25);
+  }
+  hr.hr{
+    border:none;
+    border-top:1px solid var(--border);
+    margin:22px 0;
+    width:100%;
+  }
+  .label-small{
+    font-size:11px;
+    font-weight:600;
+    letter-spacing:0.08em;
+    color:var(--text-soft);
+    text-transform:uppercase;
+    margin-bottom:10px;
+  }
+  .summary-box{
+    background:var(--bg-soft);
+    border:1px solid var(--border);
+    border-radius:14px;
+    padding:14px;
+    font-size:13px;
+    color:var(--text-soft);
+    line-height:1.6;
+    margin-bottom:24px;
+  }
+  .summary-box strong{color:var(--text);display:block;font-size:13.5px;}
+  .summary-row{margin-top:2px;}
+  .steps{
+    display:flex;
+    flex-direction:column;
+    flex:1;
+  }
+  .step-item{
+    display:flex;
+    gap:12px;
+    position:relative;
+    padding-bottom:26px;
+  }
+  .step-item:last-child{padding-bottom:0;}
+  .step-item:not(:last-child)::before{
+    content:'';
+    position:absolute;
+    left:13px;
+    top:28px;
+    bottom:0;
+    width:2px;
+    background:var(--border);
+  }
+  .step-circle{
+    flex:0 0 auto;
+    width:26px;
+    height:26px;
+    border-radius:50%;
+    background:#fff;
+    border:2px solid var(--border);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:12px;
+    font-weight:700;
+    color:var(--text-soft);
+    z-index:1;
+  }
+  .step-item.active .step-circle{
+    background:var(--gold-gradient);
+    border-color:transparent;
+    color:#fff;
+  }
+  .step-item.done .step-circle{
+    background:var(--gold-gradient);
+    border-color:transparent;
+    color:#fff;
+  }
+  .step-title{font-size:13.5px;font-weight:600;color:var(--text);}
+  .step-desc{font-size:12px;color:var(--text-soft);margin-top:2px;}
+  .footer-note{
+    font-size:11px;
+    color:var(--text-soft);
+    margin-top:24px;
+    opacity:0.8;
+  }
+  .col-right{
+    padding:36px 40px;
+    display:flex;
+    flex-direction:column;
+    min-height:560px;
+  }
+  .panel{display:none;flex-direction:column;flex:1;}
+  .panel.visible{display:flex;}
+  h1.step-heading{
+    font-size:26px;
+    font-weight:700;
+    background:var(--gold-gradient);
+    -webkit-background-clip:text;
+    background-clip:text;
+    color:transparent;
+    margin:0 0 6px;
+  }
+  .step-sub{
+    font-size:14px;
+    color:var(--text-soft);
+    margin:0 0 22px;
+  }
+  .field-label{
+    font-size:13px;
+    font-weight:600;
+    color:var(--text);
+    margin-bottom:10px;
+  }
+  .chip-row{
+    display:flex;
+    flex-wrap:wrap;
+    gap:10px;
+    margin-bottom:20px;
+  }
+  .chip{
+    border:1.5px solid var(--border);
+    background:#fff;
+    color:var(--text);
+    padding:9px 16px;
+    border-radius:999px;
+    font-family:inherit;
+    font-size:13px;
+    font-weight:500;
+    cursor:pointer;
+    transition:all .15s ease;
+    text-align:center;
+    line-height:1.3;
+  }
+  .chip:hover{border-color:var(--gold-2);}
+  .chip.selected{
+    background:var(--gold-gradient);
+    border-color:transparent;
+    color:#fff;
+    box-shadow:0 4px 14px rgba(156,122,46,0.28);
+  }
+  .chip .chip-caption{
+    display:block;
+    font-size:10.5px;
+    font-weight:400;
+    opacity:0.85;
+    margin-top:2px;
+  }
+  .chip:disabled{opacity:0.4;cursor:not-allowed;}
+  .divider-h{border:none;border-top:1px solid var(--border);margin:6px 0 22px;}
+  .booking-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:24px;
+    flex:1;
+  }
+  .calendar-box{
+    border:1px solid var(--border);
+    border-radius:16px;
+    padding:18px;
+  }
+  .calendar-box.disabled{opacity:0.45;pointer-events:none;}
+  .cal-header{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    margin-bottom:14px;
+  }
+  .cal-header .cal-label{font-weight:600;font-size:14px;text-transform:capitalize;}
+  .cal-nav-btn{
+    width:28px;height:28px;
+    border-radius:50%;
+    border:1px solid var(--border);
+    background:#fff;
+    cursor:pointer;
+    display:flex;align-items:center;justify-content:center;
+    color:var(--text);
+    font-size:14px;
+  }
+  .cal-nav-btn:hover{border-color:var(--gold-2);}
+  .cal-weekdays,.cal-days{
+    display:grid;
+    grid-template-columns:repeat(7,1fr);
+    gap:4px;
+    text-align:center;
+  }
+  .cal-weekdays div{
+    font-size:11px;
+    color:var(--text-soft);
+    font-weight:600;
+    padding-bottom:8px;
+    text-transform:lowercase;
+  }
+  .cal-day{
+    aspect-ratio:1;
+    border:none;
+    background:transparent;
+    border-radius:10px;
+    font-family:inherit;
+    font-size:13px;
+    cursor:pointer;
+    color:var(--text);
+    display:flex;align-items:center;justify-content:center;
+  }
+  .cal-day:hover:not(:disabled):not(.empty){background:var(--bg-soft);}
+  .cal-day:disabled{color:#CFC9BC;cursor:not-allowed;}
+  .cal-day.empty{visibility:hidden;cursor:default;}
+  .cal-day.selected{
+    background:var(--gold-gradient);
+    color:#fff;
+    font-weight:600;
+  }
+  .cal-day.today:not(.selected){border:1.5px solid var(--gold-2);}
+  .times-box{
+    border:1px solid var(--border);
+    border-radius:16px;
+    padding:18px;
+    display:flex;
+    flex-direction:column;
+  }
+  .period-tabs{
+    display:flex;
+    gap:6px;
+    background:var(--bg-soft);
+    border-radius:10px;
+    padding:4px;
+    margin-bottom:16px;
+  }
+  .period-tab{
+    flex:1;
+    border:none;
+    background:transparent;
+    padding:8px 10px;
+    border-radius:8px;
+    font-family:inherit;
+    font-size:12.5px;
+    font-weight:600;
+    color:var(--text-soft);
+    cursor:pointer;
+    display:flex;align-items:center;justify-content:center;gap:6px;
+  }
+  .period-tab.active{background:#fff;color:var(--text);box-shadow:0 1px 4px rgba(0,0,0,0.08);}
+  .slots-grid{
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:8px;
+    overflow-y:auto;
+    max-height:220px;
+    padding-right:2px;
+  }
+  .slot-btn{
+    border:1.5px solid var(--border);
+    background:#fff;
+    border-radius:10px;
+    padding:9px 4px;
+    font-family:inherit;
+    font-size:12.5px;
+    font-weight:500;
+    cursor:pointer;
+    color:var(--text);
+  }
+  .slot-btn:hover{border-color:var(--gold-2);}
+  .slot-btn.selected{
+    background:var(--gold-gradient);
+    border-color:transparent;
+    color:#fff;
+    font-weight:600;
+  }
+  .empty-state{
+    flex:1;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    text-align:center;
+    color:var(--text-soft);
+    font-size:12.5px;
+    gap:10px;
+    padding:10px;
+  }
+  .empty-state svg{opacity:0.55;}
+  .empty-state strong{font-size:13.5px;color:var(--text);font-weight:600;}
+  .step-footer{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    margin-top:24px;
+    padding-top:20px;
+    border-top:1px solid var(--border);
+  }
+  .btn-back{
+    background:none;
+    border:none;
+    font-family:inherit;
+    font-size:13.5px;
+    font-weight:600;
+    color:var(--text-soft);
+    cursor:pointer;
+    padding:10px 4px;
+  }
+  .btn-back:hover{color:var(--text);}
+  .btn-primary{
+    background:var(--gold-gradient);
+    border:none;
+    color:#fff;
+    font-family:inherit;
+    font-size:14px;
+    font-weight:600;
+    padding:13px 28px;
+    border-radius:999px;
+    cursor:pointer;
+    box-shadow:0 6px 18px rgba(156,122,46,0.28);
+    transition:opacity .15s ease, transform .15s ease;
+  }
+  .btn-primary:hover:not(:disabled){transform:translateY(-1px);}
+  .btn-primary:disabled{opacity:0.4;cursor:not-allowed;box-shadow:none;}
+  .form-fields{display:flex;flex-direction:column;gap:18px;max-width:420px;}
+  .form-group label{
+    display:block;
+    font-size:13px;
+    font-weight:600;
+    margin-bottom:8px;
+    color:var(--text);
+  }
+  .form-group input{
+    width:100%;
+    border:1.5px solid var(--border);
+    border-radius:12px;
+    padding:12px 14px;
+    font-family:inherit;
+    font-size:14px;
+    color:var(--text);
+    outline:none;
+  }
+  .form-group input:focus{border-color:var(--gold-2);}
+  .form-error{
+    font-size:12px;
+    color:var(--danger);
+    margin-top:12px;
+    min-height:16px;
+  }
+  .summary-card{
+    background:var(--bg-soft);
+    border:1px solid var(--border);
+    border-radius:16px;
+    padding:22px;
+    max-width:460px;
+  }
+  .summary-card .row{
+    display:flex;
+    justify-content:space-between;
+    gap:16px;
+    padding:10px 0;
+    border-bottom:1px solid var(--border);
+    font-size:13.5px;
+  }
+  .summary-card .row:last-child{border-bottom:none;}
+  .summary-card .row .k{color:var(--text-soft);}
+  .summary-card .row .v{font-weight:600;text-align:right;}
+  .done-wrap{
+    flex:1;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    text-align:center;
+    gap:16px;
+  }
+  .done-check{
+    width:64px;height:64px;
+    border-radius:50%;
+    background:var(--gold-gradient);
+    display:flex;align-items:center;justify-content:center;
+  }
+  .toast{
+    position:fixed;
+    bottom:20px;
+    left:50%;
+    transform:translateX(-50%);
+    background:var(--text);
+    color:#fff;
+    padding:12px 20px;
+    border-radius:12px;
+    font-size:13px;
+    box-shadow:0 8px 24px rgba(0,0,0,0.2);
+    z-index:50;
+    display:none;
+    max-width:90vw;
+    text-align:center;
+  }
+  @media (max-width:860px){
+    .card{grid-template-columns:1fr;}
+    .divider-v{display:none;height:1px;width:100%;}
+    .col-left{border-bottom:1px solid var(--border);}
+    .booking-grid{grid-template-columns:1fr;}
+    .col-right{padding:28px 22px;}
+    .steps{display:none;}
+  }
+</style>
+</head>
+<body>
+
+<div class="page">
+  <div class="card">
+
+    <div class="col-left">
+      <div class="illustration">
+        <svg viewBox="0 0 200 140" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="toothGrad" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0" stop-color="#E3C589"/>
+              <stop offset="1" stop-color="#9C7A2E"/>
+            </linearGradient>
+          </defs>
+          <path d="M100 20c-10-10-26-12-36-4-11 9-14 26-11 42 3 17 10 38 18 48 5 6 11 6 14-1 4-9 6-22 15-22s11 13 15 22c3 7 9 7 14 1 8-10 15-31 18-48 3-16 0-33-11-42-10-8-26-6-36 4z"
+            stroke="url(#toothGrad)" stroke-width="3.5" stroke-linejoin="round"/>
+          <path d="M78 42c4-6 12-9 22-9" stroke="url(#toothGrad)" stroke-width="3" stroke-linecap="round"/>
+          <circle cx="146" cy="34" r="4" fill="url(#toothGrad)" opacity="0.6"/>
+          <circle cx="158" cy="52" r="2.5" fill="url(#toothGrad)" opacity="0.5"/>
+          <circle cx="40" cy="50" r="3" fill="url(#toothGrad)" opacity="0.5"/>
+        </svg>
+      </div>
+
+      <img class="logo-img" src="data:image/webp;base64,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" alt="CA Odonto">
+
+      <div class="contact-line">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#9C7A2E" stroke-width="2"><path d="M12 22s8-7.58 8-13a8 8 0 1 0-16 0c0 5.42 8 13 8 13z"/><circle cx="12" cy="9" r="2.5"/></svg>
+        <span id="addressText"></span>
+      </div>
+      <div class="contact-line">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#9C7A2E" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+        <span id="phoneText"></span>
+      </div>
+      <a id="whatsappLink" class="whatsapp-btn" target="_blank" rel="noopener">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="#fff"><path d="M12 2a10 10 0 0 0-8.5 15.2L2 22l4.9-1.5A10 10 0 1 0 12 2zm0 18.2a8.1 8.1 0 0 1-4.2-1.2l-.3-.2-3 .9.9-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2zm4.5-6.1c-.2-.1-1.4-.7-1.7-.8-.2-.1-.4-.1-.6.1s-.6.8-.8 1-.3.2-.6.1a6.7 6.7 0 0 1-2-1.2 7.4 7.4 0 0 1-1.4-1.7c-.1-.2 0-.4.1-.5s.2-.3.4-.4a1.6 1.6 0 0 0 .2-.4.4.4 0 0 0 0-.4c-.1-.1-.6-1.4-.8-1.9s-.4-.4-.6-.4h-.5a1 1 0 0 0-.7.3 2.9 2.9 0 0 0-.9 2.2 5.1 5.1 0 0 0 1.1 2.7 11.6 11.6 0 0 0 4.5 4c.6.3 1.1.4 1.5.6a3.6 3.6 0 0 0 1.6.1 2.7 2.7 0 0 0 1.8-1.2 2.1 2.1 0 0 0 .1-1.2c-.1-.1-.2-.2-.5-.3z"/></svg>
+        WhatsApp
+      </a>
+
+      <hr class="hr">
+
+      <div class="label-small">Seu agendamento</div>
+      <div class="summary-box" id="summaryBox">
+        Escolha uma data e horário ao lado para continuar.
+      </div>
+
+      <div class="steps" id="stepsTrail">
+        <div class="step-item" data-step="1">
+          <div class="step-circle">1</div>
+          <div>
+            <div class="step-title">Data e horário</div>
+            <div class="step-desc">Escolha o dia e horário disponível</div>
+          </div>
+        </div>
+        <div class="step-item" data-step="2">
+          <div class="step-circle">2</div>
+          <div>
+            <div class="step-title">Seus dados</div>
+            <div class="step-desc">Informe seus dados de contato</div>
+          </div>
+        </div>
+        <div class="step-item" data-step="3">
+          <div class="step-circle">3</div>
+          <div>
+            <div class="step-title">Confirmação</div>
+            <div class="step-desc">Revise e confirme o agendamento</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="footer-note">Agendamento on-line — CA Odonto</div>
+    </div>
+
+    <div class="divider-v"></div>
+
+    <div class="col-right">
+
+      <!-- STEP 1 -->
+      <div class="panel visible" id="panelStep1">
+        <h1 class="step-heading">Escolha o melhor dia para sua consulta</h1>
+        <p class="step-sub">Selecione o procedimento e o melhor horário disponível para você.</p>
+
+        <div class="field-label">Selecione a categoria *</div>
+        <div class="chip-row" id="categoryChips"></div>
+
+        <div id="procedureWrap" style="display:none;">
+          <div class="field-label">Selecione o procedimento *</div>
+          <div class="chip-row" id="procedureChips"></div>
+        </div>
+
+        <hr class="divider-h">
+
+        <div class="booking-grid">
+          <div class="calendar-box disabled" id="calendarBox">
+            <div class="cal-header">
+              <button class="cal-nav-btn" id="calPrev" type="button">‹</button>
+              <div class="cal-label" id="calLabel">—</div>
+              <button class="cal-nav-btn" id="calNext" type="button">›</button>
+            </div>
+            <div class="cal-weekdays">
+              <div>dom</div><div>seg</div><div>ter</div><div>qua</div><div>qui</div><div>sex</div><div>sab</div>
+            </div>
+            <div class="cal-days" id="calDays"></div>
+          </div>
+
+          <div class="times-box" id="timesBox">
+            <div class="empty-state" id="timesEmpty">
+              <svg width="46" height="46" viewBox="0 0 24 24" fill="none" stroke="#9C7A2E" stroke-width="1.6"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l3 2"/><path d="M9 2h6"/></svg>
+              <strong>Selecione um procedimento</strong>
+              <span>Escolha a categoria e o procedimento acima para ver os horários disponíveis.</span>
+            </div>
+            <div id="timesContent" style="display:none;flex-direction:column;flex:1;">
+              <div class="period-tabs">
+                <button class="period-tab active" data-period="manha" type="button">☀️ Manhã</button>
+                <button class="period-tab" data-period="tarde" type="button">🌙 Tarde</button>
+              </div>
+              <div class="slots-grid" id="slotsGrid"></div>
+              <div class="empty-state" id="noSlotsMsg" style="display:none;">
+                <strong>Nenhum horário disponível neste dia</strong>
+                <span>Selecione outra data para realizar seu agendamento.</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="step-footer">
+          <span></span>
+          <button class="btn-primary" id="btnToStep2" disabled type="button">Continuar</button>
+        </div>
+      </div>
+
+      <!-- STEP 2 -->
+      <div class="panel" id="panelStep2">
+        <h1 class="step-heading">Seus dados</h1>
+        <p class="step-sub">Precisamos de algumas informações para confirmar sua consulta.</p>
+
+        <div class="form-fields">
+          <div class="form-group">
+            <label for="inputName">Nome completo *</label>
+            <input type="text" id="inputName" placeholder="Digite seu nome completo">
+          </div>
+          <div class="form-group">
+            <label for="inputPhone">Telefone / WhatsApp *</label>
+            <input type="tel" id="inputPhone" placeholder="(11) 90000-0000">
+          </div>
+        </div>
+        <div class="form-error" id="formError"></div>
+
+        <div class="step-footer">
+          <button class="btn-back" id="btnBackStep1" type="button">‹ Voltar</button>
+          <button class="btn-primary" id="btnToStep3" type="button">Continuar</button>
+        </div>
+      </div>
+
+      <!-- STEP 3 -->
+      <div class="panel" id="panelStep3">
+        <h1 class="step-heading">Confirme seu agendamento</h1>
+        <p class="step-sub">Revise as informações antes de confirmar.</p>
+
+        <div class="summary-card" id="finalSummary"></div>
+        <div class="form-error" id="confirmError"></div>
+
+        <div class="step-footer">
+          <button class="btn-back" id="btnBackStep2" type="button">‹ Voltar</button>
+          <button class="btn-primary" id="btnConfirm" type="button">Confirmar agendamento</button>
+        </div>
+      </div>
+
+      <!-- DONE -->
+      <div class="panel" id="panelDone">
+        <div class="done-wrap">
+          <div class="done-check">
+            <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3"><path d="M4 12l6 6L20 6"/></svg>
+          </div>
+          <h1 class="step-heading" style="margin:0;">Agendamento confirmado!</h1>
+          <p class="step-sub" style="margin:0;">Enviamos os detalhes abaixo. Nos vemos em breve na CA Odonto.</p>
+          <div class="summary-card" id="doneSummary" style="text-align:left;"></div>
+          <button class="btn-primary" id="btnNewBooking" type="button">Agendar outra consulta</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const CONFIG = {
+  address: "Av. Saraiva, 637 - Vila Cintra, Mogi das Cruzes - SP, 08745-140",
+  phone: "(11) 99764-2576",
+  whatsapp: "5511997642576",
+  hoursLabel: "Segunda a sexta 09:00–17:00 · Sábado 09:00–12:00 · Domingo fechado",
+  supabaseUrl: "https://rhriwmtzpirzqetedpaj.supabase.co",
+  supabaseAnonKey: "sb_publishable_zlJFgdbJz4q3pceUj5H57w_fnhsAYPH",
+  slotGranularityMinutes: 15,
+};
+
+document.getElementById('addressText').textContent = CONFIG.address;
+document.getElementById('phoneText').textContent = CONFIG.phone;
+document.getElementById('whatsappLink').href = `https://wa.me/${CONFIG.whatsapp}`;
+
+const sb = window.supabase.createClient(CONFIG.supabaseUrl, CONFIG.supabaseAnonKey);
+
+const WEEKDAY_LABELS = ['dom','seg','ter','qua','qui','sex','sab'];
+const MONTH_LABELS = ['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
+
+let state = {
+  step: 1,
+  category: null,
+  service: null,
+  date: null,
+  weekday: null,
+  time: null,
+  dentistId: null,
+  patientName: '',
+  patientPhone: '',
+  activePeriod: 'manha',
+};
+
+let servicesByCategory = {};
+let categoryOrder = [];
+let activeDentists = [];
+let workingHoursByWeekday = {};
+let workingWeekdays = new Set();
+let busySlotsCache = {};
+let monthCursor = startOfMonth(new Date());
+let currentFreeSlots = [];
+
+function pad(n){ return String(n).padStart(2,'0'); }
+function toISO(d){ return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`; }
+function startOfMonth(d){ return new Date(d.getFullYear(), d.getMonth(), 1); }
+function timeToMinutes(t){ const [h,m] = t.split(':').map(Number); return h*60+m; }
+function minutesToTime(min){ const h = Math.floor(min/60), m = min%60; return `${pad(h)}:${pad(m)}`; }
+function todayStr(){ return toISO(new Date()); }
+
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.style.display = 'block';
+  clearTimeout(showToast._tm);
+  showToast._tm = setTimeout(()=>{ t.style.display = 'none'; }, 4000);
+}
+
+async function init(){
+  try{
+    const { data: services, error: svcErr } = await sb
+      .from('services').select('*').eq('active', true).order('sort_order', { ascending: true });
+    if (svcErr) throw svcErr;
+
+    servicesByCategory = {};
+    categoryOrder = [];
+    for (const s of services){
+      if (!servicesByCategory[s.category]){
+        servicesByCategory[s.category] = [];
+        categoryOrder.push(s.category);
+      }
+      servicesByCategory[s.category].push(s);
+    }
+
+    const { data: dentists, error: dErr } = await sb
+      .from('dentists').select('id').eq('active', true);
+    if (dErr) throw dErr;
+    activeDentists = dentists || [];
+
+    const dentistIds = activeDentists.map(d => d.id);
+    workingHoursByWeekday = {};
+    workingWeekdays = new Set();
+    if (dentistIds.length){
+      const { data: wh, error: whErr } = await sb
+        .from('working_hours').select('*').in('dentist_id', dentistIds);
+      if (whErr) throw whErr;
+      for (const w of wh){
+        if (!workingHoursByWeekday[w.weekday]) workingHoursByWeekday[w.weekday] = [];
+        workingHoursByWeekday[w.weekday].push(w);
+        workingWeekdays.add(w.weekday);
+      }
+    }
+
+    renderCategoryChips();
+    renderCalendar();
+  } catch (err){
+    console.error(err);
+    showToast('Não foi possível carregar os dados da clínica. Tente novamente em instantes.');
+  }
+}
+
+function renderCategoryChips(){
+  const wrap = document.getElementById('categoryChips');
+  wrap.innerHTML = '';
+  for (const cat of categoryOrder){
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'chip';
+    btn.textContent = cat;
+    btn.addEventListener('click', () => onCategoryClick(cat));
+    wrap.appendChild(btn);
+  }
+}
+
+function onCategoryClick(cat){
+  state.category = cat;
+  state.service = null;
+  state.date = null;
+  state.time = null;
+  state.dentistId = null;
+  busySlotsCache = {};
+
+  [...document.querySelectorAll('#categoryChips .chip')].forEach(c => {
+    c.classList.toggle('selected', c.textContent === cat);
+  });
+
+  document.getElementById('procedureWrap').style.display = 'block';
+  renderProcedureChips(cat);
+
+  document.getElementById('calendarBox').classList.add('disabled');
+  document.getElementById('timesEmpty').style.display = 'flex';
+  document.getElementById('timesContent').style.display = 'none';
+  updateSummary();
+  updateContinueBtn();
+}
+
+function renderProcedureChips(cat){
+  const wrap = document.getElementById('procedureChips');
+  wrap.innerHTML = '';
+  for (const svc of servicesByCategory[cat]){
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'chip';
+    btn.innerHTML = `${svc.name}<span class="chip-caption">${svc.duration_minutes} min</span>`;
+    btn.addEventListener('click', () => onProcedureClick(svc, btn));
+    wrap.appendChild(btn);
+  }
+}
+
+function onProcedureClick(svc){
+  state.service = svc;
+  state.date = null;
+  state.time = null;
+  state.dentistId = null;
+
+  [...document.querySelectorAll('#procedureChips .chip')].forEach(c => {
+    c.classList.toggle('selected', c.textContent.startsWith(svc.name));
+  });
+
+  document.getElementById('calendarBox').classList.remove('disabled');
+  document.getElementById('timesEmpty').style.display = 'flex';
+  document.getElementById('timesContent').style.display = 'none';
+  monthCursor = startOfMonth(new Date());
+  renderCalendar();
+  updateSummary();
+  updateContinueBtn();
+}
+
+function renderCalendar(){
+  const label = `${MONTH_LABELS[monthCursor.getMonth()]} ${monthCursor.getFullYear()}`;
+  document.getElementById('calLabel').textContent = label;
+
+  const daysWrap = document.getElementById('calDays');
+  daysWrap.innerHTML = '';
+
+  const firstWeekday = monthCursor.getDay();
+  const daysInMonth = new Date(monthCursor.getFullYear(), monthCursor.getMonth()+1, 0).getDate();
+  const today = todayStr();
+
+  for (let i=0; i<firstWeekday; i++){
+    const el = document.createElement('div');
+    el.className = 'cal-day empty';
+    daysWrap.appendChild(el);
+  }
+
+  for (let day=1; day<=daysInMonth; day++){
+    const d = new Date(monthCursor.getFullYear(), monthCursor.getMonth(), day);
+    const iso = toISO(d);
+    const weekday = d.getDay();
+
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'cal-day';
+    btn.textContent = day;
+
+    const isPast = iso < today;
+    const hasWorkingHours = workingWeekdays.has(weekday);
+
+    if (isPast || !hasWorkingHours){
+      btn.disabled = true;
+    } else {
+      btn.addEventListener('click', () => onDayClick(iso, weekday, btn));
+    }
+    if (iso === today) btn.classList.add('today');
+    if (iso === state.date) btn.classList.add('selected');
+
+    daysWrap.appendChild(btn);
+  }
+}
+
+document.getElementById('calPrev').addEventListener('click', () => {
+  monthCursor = new Date(monthCursor.getFullYear(), monthCursor.getMonth()-1, 1);
+  renderCalendar();
+});
+document.getElementById('calNext').addEventListener('click', () => {
+  monthCursor = new Date(monthCursor.getFullYear(), monthCursor.getMonth()+1, 1);
+  renderCalendar();
+});
+
+async function onDayClick(iso, weekday, btnEl){
+  state.date = iso;
+  state.weekday = weekday;
+  state.time = null;
+  state.dentistId = null;
+
+  [...document.querySelectorAll('.cal-day')].forEach(b => b.classList.remove('selected'));
+  btnEl.classList.add('selected');
+
+  document.getElementById('timesEmpty').style.display = 'none';
+  document.getElementById('timesContent').style.display = 'flex';
+  document.getElementById('slotsGrid').innerHTML = '<div style="grid-column:1/-1;font-size:12.5px;color:var(--text-soft);padding:20px 0;text-align:center;">Carregando horários...</div>';
+  document.getElementById('noSlotsMsg').style.display = 'none';
+
+  try{
+    const busySlots = await getBusySlotsForDate(iso);
+    currentFreeSlots = computeFreeSlots(weekday, state.service.duration_minutes, busySlots);
+    state.activePeriod = currentFreeSlots.some(s => timeToMinutes(s.time) < 12*60) ? 'manha' : 'tarde';
+    [...document.querySelectorAll('.period-tab')].forEach(t => t.classList.toggle('active', t.dataset.period === state.activePeriod));
+    renderSlots();
+  } catch(err){
+    console.error(err);
+    showToast('Não foi possível carregar os horários. Tente novamente.');
+  }
+
+  updateSummary();
+  updateContinueBtn();
+}
+
+async function getBusySlotsForDate(iso){
+  if (busySlotsCache[iso]) return busySlotsCache[iso];
+  const { data, error } = await sb.rpc('get_busy_slots', { p_date: iso });
+  if (error) throw error;
+  busySlotsCache[iso] = data || [];
+  return busySlotsCache[iso];
+}
+
+function computeFreeSlots(weekday, durationMin, busySlots){
+  const hours = workingHoursByWeekday[weekday] || [];
+  const step = CONFIG.slotGranularityMinutes;
+  const slotMap = new Map();
+
+  for (const wh of hours){
+    const dentistId = wh.dentist_id;
+    const startMin = timeToMinutes(wh.start_time.slice(0,5));
+    const endMin = timeToMinutes(wh.end_time.slice(0,5));
+    const busyForDentist = busySlots
+      .filter(b => b.dentist_id === dentistId)
+      .map(b => ({ start: timeToMinutes(b.start_time.slice(0,5)), end: timeToMinutes(b.end_time.slice(0,5)) }));
+
+    for (let candidate = startMin; candidate + durationMin <= endMin; candidate += step){
+      const candidateEnd = candidate + durationMin;
+      const overlaps = busyForDentist.some(b => candidate < b.end && candidateEnd > b.start);
+      if (!overlaps){
+        const key = minutesToTime(candidate);
+        if (!slotMap.has(key)) slotMap.set(key, dentistId);
+      }
+    }
+  }
+
+  return [...slotMap.entries()]
+    .map(([time, dentistId]) => ({ time, dentistId }))
+    .sort((a,b) => timeToMinutes(a.time) - timeToMinutes(b.time));
+}
+
+document.querySelectorAll('.period-tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    state.activePeriod = tab.dataset.period;
+    [...document.querySelectorAll('.period-tab')].forEach(t => t.classList.toggle('active', t === tab));
+    renderSlots();
+  });
+});
+
+function renderSlots(){
+  const grid = document.getElementById('slotsGrid');
+  const noSlotsMsg = document.getElementById('noSlotsMsg');
+  grid.innerHTML = '';
+
+  const filtered = currentFreeSlots.filter(s => {
+    const min = timeToMinutes(s.time);
+    return state.activePeriod === 'manha' ? min < 12*60 : min >= 12*60;
+  });
+
+  if (!filtered.length){
+    grid.style.display = 'none';
+    noSlotsMsg.style.display = 'flex';
+    return;
+  }
+  grid.style.display = 'grid';
+  noSlotsMsg.style.display = 'none';
+
+  for (const slot of filtered){
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'slot-btn';
+    btn.textContent = slot.time;
+    if (slot.time === state.time) btn.classList.add('selected');
+    btn.addEventListener('click', () => {
+      state.time = slot.time;
+      state.dentistId = slot.dentistId;
+      [...grid.querySelectorAll('.slot-btn')].forEach(b => b.classList.remove('selected'));
+      btn.classList.add('selected');
+      updateSummary();
+      updateContinueBtn();
+    });
+    grid.appendChild(btn);
+  }
+}
+
+function updateContinueBtn(){
+  document.getElementById('btnToStep2').disabled = !(state.service && state.date && state.time);
+}
+
+function formatDateLong(iso){
+  const [y,m,d] = iso.split('-').map(Number);
+  const dt = new Date(y, m-1, d);
+  const weekdayNames = ['domingo','segunda-feira','terça-feira','quarta-feira','quinta-feira','sexta-feira','sábado'];
+  return `${weekdayNames[dt.getDay()]}, ${d} de ${MONTH_LABELS[m-1]} de ${y}`;
+}
+
+function updateSummary(){
+  const box = document.getElementById('summaryBox');
+  if (!state.service){
+    box.innerHTML = 'Escolha uma data e horário ao lado para continuar.';
+    return;
+  }
+  if (!state.date || !state.time){
+    box.innerHTML = `<strong>${state.service.name}</strong><div class="summary-row">${state.category}</div><div class="summary-row">Escolha data e horário ao lado.</div>`;
+    return;
+  }
+  box.innerHTML = `<strong>${state.service.name}</strong><div class="summary-row">${state.category}</div><div class="summary-row">${formatDateLong(state.date)}</div><div class="summary-row">às ${state.time}</div>`;
+}
+
+function setStep(step){
+  state.step = step;
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('visible'));
+  if (step === 1) document.getElementById('panelStep1').classList.add('visible');
+  if (step === 2) document.getElementById('panelStep2').classList.add('visible');
+  if (step === 3) document.getElementById('panelStep3').classList.add('visible');
+  if (step === 4) document.getElementById('panelDone').classList.add('visible');
+
+  document.querySelectorAll('.step-item').forEach(item => {
+    const n = Number(item.dataset.step);
+    item.classList.remove('active','done');
+    if (step === 4 || n < step) item.classList.add('done');
+    else if (n === step) item.classList.add('active');
+  });
+
+  if (step <= 3){
+    document.querySelectorAll('.step-item .step-circle').forEach(c => {
+      const n = Number(c.parentElement.dataset.step);
+      c.innerHTML = (n < step) ? checkIconSvg() : n;
+    });
+  }
+}
+
+function checkIconSvg(){
+  return '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3"><path d="M4 12l6 6L20 6"/></svg>';
+}
+
+document.getElementById('btnToStep2').addEventListener('click', () => {
+  document.getElementById('formError').textContent = '';
+  document.getElementById('inputName').value = state.patientName || '';
+  document.getElementById('inputPhone').value = state.patientPhone || '';
+  setStep(2);
+});
+
+document.getElementById('btnBackStep1').addEventListener('click', () => setStep(1));
+
+document.getElementById('btnToStep3').addEventListener('click', () => {
+  const name = document.getElementById('inputName').value.trim();
+  const phone = document.getElementById('inputPhone').value.trim();
+  const errorEl = document.getElementById('formError');
+
+  if (name.length < 3){
+    errorEl.textContent = 'Informe seu nome completo.';
+    return;
+  }
+  const digits = phone.replace(/\D/g, '');
+  if (digits.length < 10){
+    errorEl.textContent = 'Informe um telefone válido com DDD.';
+    return;
+  }
+
+  state.patientName = name;
+  state.patientPhone = phone;
+  errorEl.textContent = '';
+
+  renderFinalSummary();
+  setStep(3);
+});
+
+document.getElementById('btnBackStep2').addEventListener('click', () => setStep(2));
+
+function renderFinalSummary(){
+  document.getElementById('finalSummary').innerHTML = `
+    <div class="row"><span class="k">Procedimento</span><span class="v">${state.service.name}</span></div>
+    <div class="row"><span class="k">Categoria</span><span class="v">${state.category}</span></div>
+    <div class="row"><span class="k">Data</span><span class="v">${formatDateLong(state.date)}</span></div>
+    <div class="row"><span class="k">Horário</span><span class="v">${state.time}</span></div>
+    <div class="row"><span class="k">Nome</span><span class="v">${state.patientName}</span></div>
+    <div class="row"><span class="k">Contato</span><span class="v">${state.patientPhone}</span></div>
+  `;
+}
+
+document.getElementById('btnConfirm').addEventListener('click', async () => {
+  const confirmBtn = document.getElementById('btnConfirm');
+  const errorEl = document.getElementById('confirmError');
+  errorEl.textContent = '';
+  confirmBtn.disabled = true;
+  confirmBtn.textContent = 'Confirmando...';
+
+  try{
+    const startMin = timeToMinutes(state.time);
+    const endTime = minutesToTime(startMin + state.service.duration_minutes);
+
+    const { error } = await sb.from('appointments').insert({
+      dentist_id: state.dentistId,
+      service_id: state.service.id,
+      patient_name: state.patientName,
+      patient_phone: state.patientPhone,
+      date: state.date,
+      start_time: state.time + ':00',
+      end_time: endTime + ':00',
+      status: 'confirmado',
+    });
+
+    if (error){
+      if (error.code === '23P01' || error.code === '23505'){
+        errorEl.textContent = 'Esse horário acabou de ser reservado por outra pessoa. Escolha outro horário.';
+        delete busySlotsCache[state.date];
+        state.time = null;
+        state.dentistId = null;
+        setStep(1);
+        await onDayClick(state.date, state.weekday, document.querySelector('.cal-day.selected'));
+        return;
+      }
+      throw error;
+    }
+
+    document.getElementById('doneSummary').innerHTML = document.getElementById('finalSummary').innerHTML;
+    setStep(4);
+  } catch(err){
+    console.error(err);
+    errorEl.textContent = 'Não foi possível confirmar o agendamento. Tente novamente.';
+  } finally {
+    confirmBtn.disabled = false;
+    confirmBtn.textContent = 'Confirmar agendamento';
+  }
+});
+
+document.getElementById('btnNewBooking').addEventListener('click', () => {
+  state = {
+    step: 1, category: null, service: null, date: null, weekday: null,
+    time: null, dentistId: null, patientName: '', patientPhone: '', activePeriod: 'manha',
+  };
+  [...document.querySelectorAll('#categoryChips .chip')].forEach(c => c.classList.remove('selected'));
+  document.getElementById('procedureWrap').style.display = 'none';
+  document.getElementById('procedureChips').innerHTML = '';
+  document.getElementById('calendarBox').classList.add('disabled');
+  document.getElementById('timesEmpty').style.display = 'flex';
+  document.getElementById('timesContent').style.display = 'none';
+  monthCursor = startOfMonth(new Date());
+  renderCalendar();
+  updateSummary();
+  setStep(1);
+});
+
+init();
+</script>
+</body>
+</html>
