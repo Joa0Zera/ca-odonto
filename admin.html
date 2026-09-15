@@ -213,6 +213,26 @@
     align-items:center;
     gap:6px;
   }
+  .notes-label{
+    font-size:11px;
+    font-weight:600;
+    color:var(--text-soft);
+    margin-top:12px;
+    margin-bottom:6px;
+  }
+  .notes-field{
+    width:100%;
+    height:56px;
+    padding:8px 10px;
+    border:1px solid var(--border);
+    border-radius:10px;
+    font-family:inherit;
+    font-size:12px;
+    color:var(--text);
+    resize:vertical;
+    outline:none;
+  }
+  .notes-field:focus{border-color:var(--gold-2);}
   .apt-actions{
     display:flex;
     gap:8px;
@@ -229,6 +249,8 @@
     border:1px solid var(--border);
     background:#fff;
   }
+  .apt-actions .btn-reagendar{color:#4A6A8E;border-color:#4A6A8E;}
+  .apt-actions .btn-reagendar:hover{background:#EAF0F6;}
   .apt-actions .btn-done{color:var(--ok);border-color:var(--ok);}
   .apt-actions .btn-done:hover{background:var(--ok-bg);}
   .apt-actions .btn-cancel{color:var(--danger);border-color:var(--danger);}
@@ -435,6 +457,7 @@ async function loadAppointments(){
     .select('*, services(name, category)')
     .eq('dentist_id', currentDentist.id)
     .eq('date', iso)
+    .neq('status', 'cancelado')
     .order('start_time', { ascending: true });
 
   if (error){
@@ -473,15 +496,24 @@ function renderAptCard(apt){
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9C7A2E" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
       ${apt.patient_phone}
     </a>
+    <div class="notes-label">Observações</div>
+    <textarea class="notes-field" placeholder="Adicionar observações desta consulta...">${apt.notes || ''}</textarea>
   `;
+
+  const notesField = card.querySelector('.notes-field');
+  notesField.addEventListener('blur', () => saveNotes(apt.id, notesField.value));
 
   if (apt.status === 'confirmado'){
     const actions = document.createElement('div');
     actions.className = 'apt-actions';
     actions.innerHTML = `
+      <button type="button" class="btn-reagendar">Reagendar</button>
       <button type="button" class="btn-done">Concluir</button>
       <button type="button" class="btn-cancel">Cancelar</button>
     `;
+    actions.querySelector('.btn-reagendar').addEventListener('click', () => {
+      window.open('/index.html', '_blank');
+    });
     actions.querySelector('.btn-done').addEventListener('click', () => updateStatus(apt.id, 'concluido'));
     actions.querySelector('.btn-cancel').addEventListener('click', () => {
       if (confirm(`Cancelar a consulta de ${apt.patient_name} às ${apt.start_time.slice(0,5)}?`)){
@@ -492,6 +524,14 @@ function renderAptCard(apt){
   }
 
   return card;
+}
+
+async function saveNotes(id, notes){
+  const { error } = await sb.from('appointments').update({ notes }).eq('id', id);
+  if (error){
+    console.error(error);
+    showToast('Não foi possível salvar as observações.');
+  }
 }
 
 async function updateStatus(id, status){
