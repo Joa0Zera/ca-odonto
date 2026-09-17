@@ -154,6 +154,27 @@
     flex:0 0 auto;
   }
   .today-btn:hover{background:var(--bg-soft);}
+  .date-jump-btn{
+    position:relative;
+    width:34px;height:34px;
+    border-radius:50%;
+    border:1px solid var(--border);
+    background:#fff;
+    cursor:pointer;
+    font-size:15px;
+    display:flex;align-items:center;justify-content:center;
+    flex:0 0 auto;
+  }
+  .date-jump-btn:hover{border-color:var(--gold-2);}
+  .date-jump-btn input[type="date"]{
+    position:absolute;
+    inset:0;
+    width:100%;
+    height:100%;
+    opacity:0;
+    cursor:pointer;
+    border:none;
+  }
 
   .content{
     flex:1;
@@ -318,6 +339,10 @@
     </div>
     <button class="day-nav-btn" id="dayNext" type="button">›</button>
     <button class="today-btn" id="todayBtn" type="button">Hoje</button>
+    <div class="date-jump-btn" title="Escolher data">
+      📅
+      <input type="date" id="dateJump" aria-label="Escolher data">
+    </div>
   </div>
 
   <div class="content" id="content">
@@ -430,6 +455,14 @@ document.getElementById('todayBtn').addEventListener('click', () => {
   loadAppointments();
 });
 
+document.getElementById('dateJump').addEventListener('change', (e) => {
+  if (!e.target.value) return;
+  const [y, m, d] = e.target.value.split('-').map(Number);
+  currentDate = new Date(y, m - 1, d);
+  renderDayNav();
+  loadAppointments();
+});
+
 function changeDay(delta){
   currentDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate() + delta);
   renderDayNav();
@@ -445,6 +478,7 @@ function renderDayNav(){
   document.getElementById('dayLabel').textContent = label;
   document.getElementById('daySub').textContent =
     `${pad(currentDate.getDate())} de ${MONTH_LABELS[currentDate.getMonth()]} de ${currentDate.getFullYear()}`;
+  document.getElementById('dateJump').value = toISO(currentDate);
 }
 
 async function loadAppointments(){
