@@ -107,6 +107,14 @@ create policy "dentista atualiza os proprios agendamentos"
   on appointments for update
   using (dentist_id in (select id from dentists where auth_user_id = auth.uid()));
 
+-- Só permite excluir consultas já concluídas, e só as da própria dentista.
+create policy "dentista exclui os proprios agendamentos concluidos"
+  on appointments for delete
+  using (
+    status = 'concluido'
+    and dentist_id in (select id from dentists where auth_user_id = auth.uid())
+  );
+
 -- ============================================================
 -- Função pública de disponibilidade
 -- Devolve apenas os horários ocupados (sem dados do paciente)
