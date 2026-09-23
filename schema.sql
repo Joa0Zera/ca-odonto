@@ -42,7 +42,7 @@ create table appointments (
   date date not null,
   start_time time not null,
   end_time time not null,
-  status text not null default 'confirmado' check (status in ('confirmado','concluido','cancelado')),
+  status text not null default 'agendado' check (status in ('agendado','confirmado','concluido','cancelado')),
   notes text,
   created_at timestamptz not null default now(),
   check (end_time > start_time),
@@ -96,8 +96,10 @@ create policy "public pode ler horarios de trabalho"
 -- get_busy_slots() abaixo (SECURITY DEFINER, devolve só
 -- dentist_id/start_time/end_time, nunca dados do paciente).
 
+-- Paciente cria a consulta como 'agendado' (pendente); só a dentista,
+-- via update, pode passar para 'confirmado'.
 create policy "public pode criar agendamento"
-  on appointments for insert with check (status = 'confirmado');
+  on appointments for insert with check (status = 'agendado');
 
 create policy "dentista ve os proprios agendamentos"
   on appointments for select
@@ -197,3 +199,20 @@ insert into services (category, name, duration_minutes, sort_order) values
 -- insert into working_hours (dentist_id, weekday, start_time, end_time)
 -- select id, 6, '09:00', '12:00' from dentists
 -- where name = 'Dra. Catarina Rodrigues';
+
+-- ============================================================
+-- Migração: fluxo de confirmação em duas etapas
+-- (rode isso se o banco já existe e foi criado com a versão
+-- anterior deste schema.sql, antes de publicar o novo index.html
+-- /admin.html — senão os agendamentos do site público vão parar
+-- de funcionar, porque o insert vai tentar gravar status='agendado'
+-- e a policy/constraint antigas só aceitavam 'confirmado')
+-- ============================================================
+-- alter table appointments drop constraint if exists appointments_status_check;
+-- alter table appointments add constraint appointments_status_check
+--   check (status in ('agendado','confirmado','concluido','cancelado'));
+-- alter table appointments alter column status set default 'agendado';
+--
+-- drop policy if exists "public pode criar agendamento" on appointments;
+-- create policy "public pode criar agendamento"
+--   on appointments for insert with check (status = 'agendado');

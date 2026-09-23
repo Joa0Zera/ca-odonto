@@ -221,6 +221,7 @@
     border-radius:999px;
     white-space:nowrap;
   }
+  .badge.agendado{background:#FCEBD5;color:#B5651D;}
   .badge.confirmado{background:#FBF3E3;color:var(--gold-2);}
   .badge.concluido{background:var(--ok-bg);color:var(--ok);}
   .badge.cancelado{background:var(--danger-bg);color:var(--danger);}
@@ -272,6 +273,8 @@
   }
   .apt-actions .btn-reagendar{color:#4A6A8E;border-color:#4A6A8E;}
   .apt-actions .btn-reagendar:hover{background:#EAF0F6;}
+  .apt-actions .btn-confirmar{color:var(--ok);border-color:var(--ok);}
+  .apt-actions .btn-confirmar:hover{background:var(--ok-bg);}
   .apt-actions .btn-done{color:var(--ok);border-color:var(--ok);}
   .apt-actions .btn-done:hover{background:var(--ok-bg);}
   .apt-actions .btn-cancel{color:var(--danger);border-color:var(--danger);}
@@ -517,7 +520,7 @@ function renderAptCard(apt){
   const card = document.createElement('div');
   card.className = 'apt-card';
 
-  const statusLabels = { confirmado: 'Confirmada', concluido: 'Concluída', cancelado: 'Cancelada' };
+  const statusLabels = { agendado: 'Agendado', confirmado: 'Confirmada', concluido: 'Concluída', cancelado: 'Cancelada' };
   const serviceName = apt.services ? apt.services.name : 'Procedimento';
   const phoneDigits = (apt.patient_phone || '').replace(/\D/g, '');
 
@@ -538,6 +541,26 @@ function renderAptCard(apt){
 
   const notesField = card.querySelector('.notes-field');
   notesField.addEventListener('blur', () => saveNotes(apt.id, notesField.value));
+
+  if (apt.status === 'agendado'){
+    const actions = document.createElement('div');
+    actions.className = 'apt-actions';
+    actions.innerHTML = `
+      <button type="button" class="btn-confirmar">Confirmar</button>
+      <button type="button" class="btn-reagendar">Reagendar</button>
+      <button type="button" class="btn-cancel">Cancelar</button>
+    `;
+    actions.querySelector('.btn-confirmar').addEventListener('click', () => updateStatus(apt.id, 'confirmado'));
+    actions.querySelector('.btn-reagendar').addEventListener('click', () => {
+      window.open('/index.html', '_blank');
+    });
+    actions.querySelector('.btn-cancel').addEventListener('click', () => {
+      if (confirm(`Cancelar a consulta de ${apt.patient_name} às ${apt.start_time.slice(0,5)}?`)){
+        updateStatus(apt.id, 'cancelado');
+      }
+    });
+    card.appendChild(actions);
+  }
 
   if (apt.status === 'confirmado'){
     const actions = document.createElement('div');
