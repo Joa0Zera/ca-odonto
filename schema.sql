@@ -42,6 +42,7 @@ create table appointments (
   date date not null,
   start_time time not null,
   end_time time not null,
+  room text not null default 'Sala 1',
   status text not null default 'agendado' check (status in ('agendado','confirmado','concluido','cancelado')),
   notes text,
   created_at timestamptz not null default now(),
@@ -55,15 +56,16 @@ create table appointments (
 create index idx_appointments_dentist_date on appointments (dentist_id, date);
 
 -- ------------------------------------------------------------
--- Trava de concorrência: impede duas consultas sobrepostas para
--- a mesma dentista, mesmo em caso de dois pacientes confirmando
--- ao mesmo tempo o mesmo horário (condição de corrida). Ignora
--- agendamentos cancelados.
+-- Trava de concorrência: impede duas consultas sobrepostas na
+-- mesma sala (uma sala física não comporta dois pacientes), mesmo
+-- em caso de dois pacientes confirmando ao mesmo tempo o mesmo
+-- horário (condição de corrida). Salas diferentes podem ter
+-- consultas no mesmo horário. Ignora agendamentos cancelados.
 -- ------------------------------------------------------------
 alter table appointments
   add constraint appointments_no_overlap
   exclude using gist (
-    dentist_id with =,
+    room with =,
     slot_range with &&
   )
   where (status <> 'cancelado');
@@ -123,13 +125,13 @@ create policy "dentista exclui os proprios agendamentos concluidos"
 -- para o site público calcular os horários livres.
 -- ============================================================
 create or replace function public.get_busy_slots(p_date date)
-returns table (dentist_id uuid, start_time time, end_time time)
+returns table (dentist_id uuid, room text, start_time time, end_time time)
 language sql
 security definer
 set search_path = public
 stable
 as $$
-  select a.dentist_id, a.start_time, a.end_time
+  select a.dentist_id, a.room, a.start_time, a.end_time
   from appointments a
   where a.date = p_date
     and a.status <> 'cancelado';
@@ -216,3 +218,25 @@ insert into services (category, name, duration_minutes, sort_order) values
 -- drop policy if exists "public pode criar agendamento" on appointments;
 -- create policy "public pode criar agendamento"
 --   on appointments for insert with check (status = 'agendado');
+
+-- ============================================================
+-- Migração: múltiplas salas (rode ANTES de publicar o novo
+-- index.html/admin.html, num banco já existente)
+-- ============================================================
+-- alter table appointments add column if not exists room text not null default 'Sala 1';
+--
+-- alter table appointments drop constraint if exists appointments_no_overlap;
+-- alter table appointments add constraint appointments_no_overlap
+--   exclude using gist (room with =, slot_range with &&)
+--   where (status <> 'cancelado');
+--
+-- drop function if exists public.get_busy_slots(date);
+-- create function public.get_busy_slots(p_date date)
+-- returns table (dentist_id uuid, room text, start_time time, end_time time)
+-- language sql security definer set search_path = public stable
+-- as $$
+--   select a.dentist_id, a.room, a.start_time, a.end_time
+--   from appointments a
+--   where a.date = p_date and a.status <> 'cancelado';
+-- $$;
+-- grant execute on function public.get_busy_slots(date) to anon, authenticated;

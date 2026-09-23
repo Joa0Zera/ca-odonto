@@ -624,6 +624,11 @@
           </div>
         </div>
 
+        <div id="roomWrap" style="display:none;margin-top:22px;">
+          <div class="field-label">Escolha a sala *</div>
+          <div class="chip-row" id="roomChips"></div>
+        </div>
+
         <div class="step-footer">
           <span></span>
           <button class="btn-primary" id="btnToStep2" disabled type="button">Continuar</button>
@@ -697,6 +702,7 @@ const CONFIG = {
   supabaseUrl: "https://rhriwmtzpirzqetedpaj.supabase.co",
   supabaseAnonKey: "sb_publishable_zlJFgdbJz4q3pceUj5H57w_fnhsAYPH",
   slotGranularityMinutes: 15,
+  rooms: ["Sala 1", "Sala 2"],
 };
 
 document.getElementById('addressText').textContent = CONFIG.address;
@@ -715,6 +721,7 @@ let state = {
   date: null,
   weekday: null,
   time: null,
+  room: null,
   dentistId: null,
   patientName: '',
   patientPhone: '',
@@ -806,7 +813,9 @@ function onCategoryClick(cat){
   state.service = null;
   state.date = null;
   state.time = null;
+  state.room = null;
   state.dentistId = null;
+  renderRoomChips(null);
   busySlotsCache = {};
 
   [...document.querySelectorAll('#categoryChips .chip')].forEach(c => {
@@ -840,7 +849,9 @@ function onProcedureClick(svc){
   state.service = svc;
   state.date = null;
   state.time = null;
+  state.room = null;
   state.dentistId = null;
+  renderRoomChips(null);
 
   [...document.querySelectorAll('#procedureChips .chip')].forEach(c => {
     c.classList.toggle('selected', c.textContent.startsWith(svc.name));
@@ -910,7 +921,9 @@ async function onDayClick(iso, weekday, btnEl){
   state.date = iso;
   state.weekday = weekday;
   state.time = null;
+  state.room = null;
   state.dentistId = null;
+  renderRoomChips(null);
 
   [...document.querySelectorAll('.cal-day')].forEach(b => b.classList.remove('selected'));
   btnEl.classList.add('selected');
@@ -948,26 +961,31 @@ function computeFreeSlots(weekday, durationMin, busySlots){
   const step = CONFIG.slotGranularityMinutes;
   const slotMap = new Map();
 
+  const busyByRoom = {};
+  for (const room of CONFIG.rooms){
+    busyByRoom[room] = busySlots
+      .filter(b => b.room === room)
+      .map(b => ({ start: timeToMinutes(b.start_time.slice(0,5)), end: timeToMinutes(b.end_time.slice(0,5)) }));
+  }
+
   for (const wh of hours){
     const dentistId = wh.dentist_id;
     const startMin = timeToMinutes(wh.start_time.slice(0,5));
     const endMin = timeToMinutes(wh.end_time.slice(0,5));
-    const busyForDentist = busySlots
-      .filter(b => b.dentist_id === dentistId)
-      .map(b => ({ start: timeToMinutes(b.start_time.slice(0,5)), end: timeToMinutes(b.end_time.slice(0,5)) }));
 
     for (let candidate = startMin; candidate + durationMin <= endMin; candidate += step){
       const candidateEnd = candidate + durationMin;
-      const overlaps = busyForDentist.some(b => candidate < b.end && candidateEnd > b.start);
-      if (!overlaps){
+      const freeRooms = CONFIG.rooms.filter(room =>
+        !busyByRoom[room].some(b => candidate < b.end && candidateEnd > b.start));
+      if (freeRooms.length){
         const key = minutesToTime(candidate);
-        if (!slotMap.has(key)) slotMap.set(key, dentistId);
+        if (!slotMap.has(key)) slotMap.set(key, { dentistId, freeRooms });
       }
     }
   }
 
   return [...slotMap.entries()]
-    .map(([time, dentistId]) => ({ time, dentistId }))
+    .map(([time, info]) => ({ time, dentistId: info.dentistId, freeRooms: info.freeRooms }))
     .sort((a,b) => timeToMinutes(a.time) - timeToMinutes(b.time));
 }
 
@@ -1006,6 +1024,8 @@ function renderSlots(){
     btn.addEventListener('click', () => {
       state.time = slot.time;
       state.dentistId = slot.dentistId;
+      state.room = slot.freeRooms.length === 1 ? slot.freeRooms[0] : null;
+      renderRoomChips(slot.freeRooms);
       [...grid.querySelectorAll('.slot-btn')].forEach(b => b.classList.remove('selected'));
       btn.classList.add('selected');
       updateSummary();
@@ -1016,7 +1036,33 @@ function renderSlots(){
 }
 
 function updateContinueBtn(){
-  document.getElementById('btnToStep2').disabled = !(state.service && state.date && state.time);
+  document.getElementById('btnToStep2').disabled = !(state.service && state.date && state.time && state.room);
+}
+
+function renderRoomChips(freeRooms){
+  const wrap = document.getElementById('roomWrap');
+  const chips = document.getElementById('roomChips');
+  chips.innerHTML = '';
+  if (!freeRooms){
+    wrap.style.display = 'none';
+    return;
+  }
+  wrap.style.display = 'block';
+  for (const room of CONFIG.rooms){
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'chip';
+    btn.textContent = room;
+    btn.disabled = !freeRooms.includes(room);
+    if (room === state.room) btn.classList.add('selected');
+    btn.addEventListener('click', () => {
+      state.room = room;
+      renderRoomChips(freeRooms);
+      updateSummary();
+      updateContinueBtn();
+    });
+    chips.appendChild(btn);
+  }
 }
 
 function formatDateLong(iso){
@@ -1036,7 +1082,7 @@ function updateSummary(){
     box.innerHTML = `<strong>${state.service.name}</strong><div class="summary-row">${state.category}</div><div class="summary-row">Escolha data e horário ao lado.</div>`;
     return;
   }
-  box.innerHTML = `<strong>${state.service.name}</strong><div class="summary-row">${state.category}</div><div class="summary-row">${formatDateLong(state.date)}</div><div class="summary-row">às ${state.time}</div>`;
+  box.innerHTML = `<strong>${state.service.name}</strong><div class="summary-row">${state.category}</div><div class="summary-row">${formatDateLong(state.date)}</div><div class="summary-row">às ${state.time}${state.room ? ' · ' + state.room : ''}</div>`;
 }
 
 function setStep(step){
@@ -1106,6 +1152,7 @@ function renderFinalSummary(){
     <div class="row"><span class="k">Categoria</span><span class="v">${state.category}</span></div>
     <div class="row"><span class="k">Data</span><span class="v">${formatDateLong(state.date)}</span></div>
     <div class="row"><span class="k">Horário</span><span class="v">${state.time}</span></div>
+    <div class="row"><span class="k">Sala</span><span class="v">${state.room}</span></div>
     <div class="row"><span class="k">Nome</span><span class="v">${state.patientName}</span></div>
     <div class="row"><span class="k">Contato</span><span class="v">${state.patientPhone}</span></div>
   `;
@@ -1130,6 +1177,7 @@ document.getElementById('btnConfirm').addEventListener('click', async () => {
       date: state.date,
       start_time: state.time + ':00',
       end_time: endTime + ':00',
+      room: state.room,
       status: 'agendado',
     });
 
@@ -1160,8 +1208,9 @@ document.getElementById('btnConfirm').addEventListener('click', async () => {
 document.getElementById('btnNewBooking').addEventListener('click', () => {
   state = {
     step: 1, category: null, service: null, date: null, weekday: null,
-    time: null, dentistId: null, patientName: '', patientPhone: '', activePeriod: 'manha',
+    time: null, room: null, dentistId: null, patientName: '', patientPhone: '', activePeriod: 'manha',
   };
+  renderRoomChips(null);
   [...document.querySelectorAll('#categoryChips .chip')].forEach(c => c.classList.remove('selected'));
   document.getElementById('procedureWrap').style.display = 'none';
   document.getElementById('procedureChips').innerHTML = '';
